@@ -1,5 +1,7 @@
+import FirendRequestSidebarOptions from "@/components/ui/FirendRequestSidebarOptions";
 import { Icon, Icons } from "@/components/ui/Icons";
 import SignOutButton from "@/components/ui/SignOutButton";
+import { fetchRedis } from "@/helpers/redis";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import Image from "next/image";
@@ -29,6 +31,17 @@ const sidebarOptions: SidebarOption[] = [
 const Layout = async ({ children }: LayoutProps) => {
   const session = await getServerSession(authOptions);
   if (!session) notFound();
+
+  {
+    /* get pending friend requests */
+  }
+  const unseenRequestCount = (
+    (await fetchRedis(
+      "smembers",
+      `user:${session.user.id}:incoming_friend_requests`
+    )) as User[]
+  ).length;
+
   return (
     <div className="w-full flex h-screen">
       <div className="flex h-full w-full max-w-xs grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
@@ -67,6 +80,14 @@ const Layout = async ({ children }: LayoutProps) => {
                   );
                 })}
               </ul>
+            </li>
+
+            {/* friend requests */}
+            <li>
+              <FirendRequestSidebarOptions
+                sessionId={session.user.id}
+                initialUnseenCount={unseenRequestCount}
+              />
             </li>
 
             {/* profile section */}
