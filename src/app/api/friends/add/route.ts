@@ -1,4 +1,8 @@
-import { fetchRedis } from "@/helpers/redis";
+import {
+  checkIfUserInvited,
+  checkIfUserIsFriend,
+  getUserIdByEmail,
+} from "@/helpers/dbQueries";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { addFriendValidator } from "@/lib/validations/add-friend";
@@ -13,10 +17,7 @@ export async function POST(req: Request) {
     const { email: emailToAdd } = addFriendValidator.parse(body.email);
 
     // get user id from email using the Redis db
-    const idToAdd = (await fetchRedis(
-      "get",
-      `user:email:${emailToAdd}`
-    )) as string;
+    const idToAdd = await getUserIdByEmail(emailToAdd);
     if (!idToAdd)
       return new Response("This user does not exist.", { status: 400 });
 
@@ -29,23 +30,13 @@ export async function POST(req: Request) {
       return new Response("Cannot add yourself as a friend.", { status: 400 });
 
     // check if user already invited
-    const isAlreadyInvited = await fetchRedis(
-      "sismember",
-      `user:${idToAdd}:incoming_friend_requests`,
-      session.user.id
-    );
-    if (isAlreadyInvited)
+    if (await checkIfUserInvited(session.user.id, idToAdd))
       return new Response("This user already has a pending invitation.", {
         status: 400,
       });
 
     // check if user already a friend
-    const isAlreadyFriend = await fetchRedis(
-      "sismember",
-      `user:${session.user.id}:friends`,
-      idToAdd
-    );
-    if (isAlreadyFriend)
+    if (await checkIfUserIsFriend(session.user.id, idToAdd))
       return new Response("This user is your friend.", {
         status: 400,
       });
