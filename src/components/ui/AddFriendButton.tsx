@@ -13,7 +13,9 @@ interface AddFirendButtonProps {}
 type FormData = z.infer<typeof addFriendValidator>;
 
 const AddFriendButton: FC<AddFirendButtonProps> = ({}) => {
+  // submit success state
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
+  // form handling hook
   const {
     register,
     handleSubmit,
@@ -23,6 +25,7 @@ const AddFriendButton: FC<AddFirendButtonProps> = ({}) => {
     resolver: zodResolver(addFriendValidator),
   });
 
+  // handler for adding a new friend
   const addFriend = async (email: string) => {
     try {
       // validation
@@ -49,6 +52,7 @@ const AddFriendButton: FC<AddFirendButtonProps> = ({}) => {
     }
   };
 
+  // form submit handler
   const onSubmit = (data: FormData) => {
     addFriend(data.email);
   };
@@ -64,7 +68,9 @@ const AddFriendButton: FC<AddFirendButtonProps> = ({}) => {
 
       <div className="mt-2 flex gap-4">
         <input
-          {...register("email")}
+          {
+            ...register("email") /* this is wierd af */
+          }
           type="text"
           className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
           placeholder="email@example.com"
