@@ -1,6 +1,9 @@
+import ChatInput from "@/components/ui/ChatInput";
+import Messages from "@/components/ui/Messages";
 import { getChatMesseages, getUserById } from "@/helpers/dbQueries";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 interface PageProps {
@@ -22,7 +25,39 @@ const page = async ({ params }: PageProps) => {
   const chatPartner = await getUserById(chatPartnerId);
   const messages = await getChatMesseages(chatId);
 
-  return <div className="flex-1">Chat page for {chatId}</div>;
+  return (
+    <div className="flex-1 justify-between flex flex-col h-full max-h-[calc(100vh-6rem)]">
+      <div className="flex sm:items-center justify-between py-3 border-b-2 border-gray-200">
+        <div className="relative flex items-center space-x-4">
+          <div className="relative">
+            <div className="relative w-8 sm:w-12 h-8 sm:h-12">
+              <Image
+                fill
+                referrerPolicy="no-referrer"
+                src={chatPartner.image}
+                alt={`${chatPartner.name}'s profile picture`}
+                className="rounded-full"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col leading-tight">
+            <div className="flex items-center">
+              <span className="font-semibold text-xl text-gray-700 mr-3">
+                {chatPartner.name}
+              </span>
+            </div>
+
+            <span className="text-sm text-gray-600 font-medium">
+              {chatPartner.email}
+            </span>
+          </div>
+        </div>
+      </div>
+      <Messages sessionUserId={session.user.id} initialMessages={messages} />
+      <ChatInput chatId={chatId} chatPartner={chatPartner} />
+    </div>
+  );
 };
 
 export default page;
