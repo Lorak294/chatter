@@ -2,14 +2,13 @@ import FirendRequestSidebarOptions from "@/components/ui/FirendRequestSidebarOpt
 import { Icon, Icons } from "@/components/ui/Icons";
 import SidebarChatList from "@/components/ui/SidebarChatList";
 import SignOutButton from "@/components/ui/SignOutButton";
-import { getFriendsByUserId } from "@/helpers/dbQueries";
-import { fetchRedis } from "@/helpers/redis";
+import { getFriendsByUserId, getUsersWhoInvitedMe } from "@/helpers/dbQueries";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FC, ReactNode } from "react";
+import { ReactNode } from "react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -41,15 +40,8 @@ const Layout = async ({ children }: LayoutProps) => {
   if (!session) notFound();
 
   const friends = await getFriendsByUserId(session.user.id);
-
-  {
-    /* get pending friend requests */
-  }
-  const unseenRequestCount = (
-    (await fetchRedis(
-      "smembers",
-      `user:${session.user.id}:incoming_friend_requests`
-    )) as User[]
+  const unseenRequestCount = await (
+    await getUsersWhoInvitedMe(session.user.id)
   ).length;
 
   return (
@@ -68,7 +60,10 @@ const Layout = async ({ children }: LayoutProps) => {
           <ul role="list" className="flex flex-1 flex-col gap-y-7">
             {/* fiends chats */}
             <li>
-              <SidebarChatList friends={friends} />
+              <SidebarChatList
+                sessionUserId={session.user.id}
+                friends={friends}
+              />
             </li>
 
             <li>

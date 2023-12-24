@@ -22,7 +22,7 @@ const page = async ({ params }: PageProps) => {
   const chatPartner = await getUserById(chatPartnerId);
   const messages = await getChatMesseages(chatId);
 
-  return <div>Chat page for {chatId}</div>;
+  return <div className="flex-1">Chat page for {chatId}</div>;
 };
 
 export default page;
