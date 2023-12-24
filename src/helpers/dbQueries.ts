@@ -13,18 +13,21 @@ export async function getUserIdByEmail(email: string) {
   return id;
 }
 
-export async function getFriendsByUserId(userId: string) {
+export async function getFriendsIdsByUserId(userId: string) {
   const friendsIds = (await fetchRedis(
     "smembers",
     `user:${userId}:friends`
   )) as string[];
+  return friendsIds;
+}
 
+export async function getFriendsByUserId(userId: string) {
+  const friendsIds = await getFriendsIdsByUserId(userId);
   const friends = await Promise.all(
     friendsIds.map(async (friendId) => {
       return await getUserById(friendId);
     })
   );
-
   return friends;
 }
 
