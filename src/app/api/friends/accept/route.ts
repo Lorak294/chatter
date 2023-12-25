@@ -1,4 +1,4 @@
-import { fetchRedis } from "@/helpers/redis";
+import { checkIfInvitedByUser, checkIfUserIsFriend } from "@/helpers/dbQueries";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { acceptFriendValidator } from "@/lib/validations/accept-friend";
@@ -22,21 +22,12 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return new Response("Unauthorized", { status: 401 });
 
-    // verify if not already friends
-    const alreadyFriends = await fetchRedis(
-      "sismember",
-      `user:${session.user.id}:friends`,
-      idToAdd
-    );
-    if (alreadyFriends) return new Response("Already firends", { status: 400 });
+    // verify that not already friends
+    if (await checkIfUserIsFriend(session.user.id, idToAdd))
+      return new Response("Already firends", { status: 400 });
 
     // verify if has peneding friend request
-    const hasFriendRequest = await fetchRedis(
-      "sismember",
-      `user:${session.user.id}:incoming_friend_requests`,
-      idToAdd
-    );
-    if (!hasFriendRequest)
+    if (!(await checkIfInvitedByUser(session.user.id, idToAdd)))
       return new Response("No friend request", { status: 400 });
 
     // add friends

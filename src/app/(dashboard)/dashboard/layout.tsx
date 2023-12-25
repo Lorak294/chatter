@@ -1,13 +1,14 @@
 import FirendRequestSidebarOptions from "@/components/ui/FirendRequestSidebarOptions";
 import { Icon, Icons } from "@/components/ui/Icons";
+import SidebarChatList from "@/components/ui/SidebarChatList";
 import SignOutButton from "@/components/ui/SignOutButton";
-import { fetchRedis } from "@/helpers/redis";
+import { getFriendsByUserId, getUsersWhoInvitedMe } from "@/helpers/dbQueries";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FC, ReactNode } from "react";
+import { ReactNode } from "react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -26,20 +27,21 @@ const sidebarOptions: SidebarOption[] = [
     href: "/dashboard/add",
     icon: "UserPlus",
   },
+  // {
+  //   id: 2,
+  //   name: "Friend requests",
+  //   href: "/dashboard/requests",
+  //   icon: "User",
+  // },
 ];
 
 const Layout = async ({ children }: LayoutProps) => {
   const session = await getServerSession(authOptions);
   if (!session) notFound();
 
-  {
-    /* get pending friend requests */
-  }
-  const unseenRequestCount = (
-    (await fetchRedis(
-      "smembers",
-      `user:${session.user.id}:incoming_friend_requests`
-    )) as User[]
+  const friends = await getFriendsByUserId(session.user.id);
+  const unseenRequestCount = await (
+    await getUsersWhoInvitedMe(session.user.id)
   ).length;
 
   return (
@@ -49,12 +51,21 @@ const Layout = async ({ children }: LayoutProps) => {
           <Icons.Logo className="h-8 w-auto text-indigo-600" />
         </Link>
 
-        <div className="text-xs font-semibold leading-6 text-gray-400">
-          Your chats
-        </div>
+        {friends.length > 0 ? (
+          <div className="text-xs font-semibold leading-6 text-gray-400">
+            Your chats
+          </div>
+        ) : null}
         <nav className="flex flex-1 flex-col">
           <ul role="list" className="flex flex-1 flex-col gap-y-7">
-            <li>chats</li>
+            {/* fiends chats */}
+            <li>
+              <SidebarChatList
+                sessionUserId={session.user.id}
+                friends={friends}
+              />
+            </li>
+
             <li>
               <div className="text-xs font-semibold leading-6 text-gray-400">
                 Overview
@@ -79,15 +90,14 @@ const Layout = async ({ children }: LayoutProps) => {
                     </li>
                   );
                 })}
+                {/* friend requests - HAS TO BE SPECIAL BECAUSE OF THE REAL_TIME NOTIFICATION NUMBER */}
+                <li>
+                  <FirendRequestSidebarOptions
+                    sessionId={session.user.id}
+                    initialUnseenCount={unseenRequestCount}
+                  />
+                </li>
               </ul>
-            </li>
-
-            {/* friend requests */}
-            <li>
-              <FirendRequestSidebarOptions
-                sessionId={session.user.id}
-                initialUnseenCount={unseenRequestCount}
-              />
             </li>
 
             {/* profile section */}
