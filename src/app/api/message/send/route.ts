@@ -1,6 +1,8 @@
 import { checkIfUserIsFriend } from "@/helpers/dbQueries";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { pusherServer } from "@/lib/pusher";
+import { toPusherKey } from "@/lib/utils";
 import { messageValidator } from "@/lib/validations/message";
 import { sendMessageValidator } from "@/lib/validations/send-message";
 import { nanoid } from "nanoid";
@@ -39,10 +41,20 @@ export async function POST(req: Request) {
     };
 
     const message = messageValidator.parse(messageData);
+
+    // add to db
     await db.zadd(`chat:${chatId}:messages`, {
       score: timestamp,
       member: JSON.stringify(message),
     });
+
+    // notify the pusher clients
+    pusherServer.trigger(
+      toPusherKey(`chat:${chatId}`),
+      "incoming_message",
+      message
+    );
+
     return new Response("OK");
   } catch (error) {
     if (error instanceof z.ZodError)

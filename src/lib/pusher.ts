@@ -1,6 +1,5 @@
 import PusherServer from "pusher";
 import PusherClinet from "pusher-js";
-import { toPusherKey } from "./utils";
 
 export const pusherServer = new PusherServer({
   appId: process.env.PUSHER_APP_ID!,
