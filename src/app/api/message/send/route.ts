@@ -1,4 +1,4 @@
-import { checkIfUserIsFriend } from "@/helpers/dbQueries";
+import { checkIfUserIsFriend, getUserById } from "@/helpers/dbQueries";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { pusherServer } from "@/lib/pusher";
@@ -30,7 +30,6 @@ export async function POST(req: Request) {
       return new Response("Unauthorized", { status: 401 });
 
     // ok, send the msg
-    // const sender = await getUserById(session.user.id);
     const timestamp = Date.now();
     const messageData: Message = {
       id: nanoid(),
@@ -41,6 +40,7 @@ export async function POST(req: Request) {
     };
 
     const message = messageValidator.parse(messageData);
+    const sender = await getUserById(session.user.id);
 
     // add to db
     await db.zadd(`chat:${chatId}:messages`, {
@@ -48,12 +48,18 @@ export async function POST(req: Request) {
       member: JSON.stringify(message),
     });
 
-    // notify the pusher clients
+    // send new message through pusher
     pusherServer.trigger(
       toPusherKey(`chat:${chatId}`),
       "incoming_message",
       message
     );
+    // notify the recipient about new chat activity
+    pusherServer.trigger(toPusherKey(`user:${friendId}:chats`), "new_message", {
+      ...message,
+      senderName: sender.name,
+      senderImg: sender.image,
+    });
 
     return new Response("OK");
   } catch (error) {
